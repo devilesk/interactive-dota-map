@@ -19,3 +19,7 @@ def getImageCoordinates(x_r,y_r):
     y = int(reverse_lerp(map_y_boundaries[0], map_y_boundaries[1], y_r) * map_h)
     return x, y
 ```
+
+##Basic Example
+
+Refer to basic.html and interactivemap.basic.js for a stripped down version which just has layers and markers representing the data, without all the other controls.
