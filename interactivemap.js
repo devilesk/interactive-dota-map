@@ -6,7 +6,6 @@ var SENTRY_VISION_RADIUS = 850,
     TOWER_ATTACK_RANGE_RADIUS = 700,
     map_data_path = "data.json",
     map_tile_path = "tiles/",
-    //map_tile_path = ["http://map1.devilesk.com/dota2/apps/interactivemap2/tiles/", "http://map2.devilesk.com/dota2/apps/interactivemap2/tiles/"],
     marker_icon_path = "http://www.openlayers.org/dev/img/marker.png",
     ward_icon_path = "ward_observer.png",
     sentry_icon_path = "ward_sentry.png",
@@ -38,7 +37,7 @@ var SENTRY_VISION_RADIUS = 850,
         type: "png",
         getURL: getMyURL
     }),
-    ls = new OpenLayers.Control.LayerSwitcher({
+    layerSwitcher = new OpenLayers.Control.LayerSwitcher({
         ascending: false
     }),
     dayRangeLayer = new OpenLayers.Layer.Vector("Day Vision Range"),
@@ -56,7 +55,7 @@ var SENTRY_VISION_RADIUS = 850,
     lastDistance,
     request = new XMLHttpRequest();
 
-function markerClick(e) {
+function handleTowerMarkerClick(e) {
     var circle,
         feature,
         style;
@@ -276,7 +275,7 @@ function addMarker(markers, ll, popupClass, popupContentHTML, closeBox, overflow
     feature.data.overflow = overflow ? "auto" : "hidden";
     marker = feature.createMarker();
     
-    function markerClick(evt) {
+    function handleHoverPopup(evt) {
         if (this.popup == null) {
             this.popup = this.createPopup(this.closeBox);
             map.addPopup(this.popup);
@@ -290,8 +289,8 @@ function addMarker(markers, ll, popupClass, popupContentHTML, closeBox, overflow
     };
     
     if (markers.name == "Towers") {
-        marker.events.register("mouseover", feature, markerClick);
-        marker.events.register("mouseout", feature, markerClick);
+        marker.events.register("mouseover", feature, handleHoverPopup);
+        marker.events.register("mouseout", feature, handleHoverPopup);
     }
     markers.addMarker(marker);
     return marker;
@@ -317,7 +316,7 @@ function getMyURL(bounds) {
 function onDataLoad(data) {
     var markers = {},
         marker,
-        vecLyr = map.getLayersByName("Placed Wards")[0],
+        vectorLayer = map.getLayersByName("Placed Wards")[0],
         style = {
             strokeColor: "#00FF00",
             strokeOpacity: 1,
@@ -325,8 +324,10 @@ function onDataLoad(data) {
             fillColor: "#00FF00",
             fillOpacity: .4
         },
-        pnt = [], ln, pf;
+        box_points = [], box_rect, box_feature;
+
     for (var k in data) {
+        // Create markers for non-neutral spawn box and non-tree layers
         if (k != "trigger_multiple" && k != "ent_dota_tree") {
             markers[k] = new OpenLayers.Layer.Markers(layerNames[k]);
             map.addLayer(markers[k]);
@@ -339,33 +340,37 @@ function onDataLoad(data) {
                 marker.attack_range_radius = TOWER_ATTACK_RANGE_RADIUS;
                 marker.showInfo = false;
                 if (k == "npc_dota_tower") {
-                    marker.events.register("mousedown", markers[k], markerClick);
+                    marker.events.register("mousedown", markers[k], handleTowerMarkerClick);
                 }
             }
         }
+        // Set up tree layer without creating tree markers yet
         else if (k == "ent_dota_tree") {
             markers[k] = new OpenLayers.Layer.Markers(layerNames[k]);
             map.addLayer(markers[k]);
             markers[k].setVisibility(false);
             markers[k].data = data[k];
         }
+        // Create neutral spawn markers and rectangles
         else if (k == "trigger_multiple") {
             markers["npc_dota_neutral_spawner_box"] = new OpenLayers.Layer.Vector(layerNames[k]);
             map.addLayer(markers["npc_dota_neutral_spawner_box"]);
             markers["npc_dota_neutral_spawner_box"].setVisibility(false);
             for (var i = 0; i < data[k].length; i++) {
-                pnt = [];
+                box_points = [];
                 for (var j = 0; j < data[k][i].length; j++) {
-                    pnt.push(new OpenLayers.Geometry.Point(data[k][i][j][0], 5120 - data[k][i][j][1]));
+                    box_points.push(new OpenLayers.Geometry.Point(data[k][i][j][0], 5120 - data[k][i][j][1]));
                 }
-                ln = new OpenLayers.Geometry.LinearRing(pnt);
-                pf = new OpenLayers.Feature.Vector(ln, null, style);
-                markers["npc_dota_neutral_spawner_box"].addFeatures([pf]);
+                box_rect = new OpenLayers.Geometry.LinearRing(box_points);
+                box_feature = new OpenLayers.Feature.Vector(box_rect, null, style);
+                markers["npc_dota_neutral_spawner_box"].addFeatures([box_feature]);
             }
         }
     }
     
-    map.raiseLayer(vecLyr, map.layers.length);
+    map.raiseLayer(vectorLayer, map.layers.length);
+    
+    // Create tree markers the first time the tree layer is switched to
     map.events.register("changelayer", null, function (evt) {
         if (evt.property === "visibility" && evt.layer.name == layerNames["ent_dota_tree"] && !evt.layer.loaded) {
             for (var i = 0; i < evt.layer.data.length; i++) {
@@ -376,9 +381,11 @@ function onDataLoad(data) {
     })
 }
 
+// Start setting up the map, adding controls and layers
 map.addLayer(wms);
 map.zoomToMaxExtent();
-map.addControl(ls);
+map.addControl(layerSwitcher);
+layerSwitcher.maximizeControl();
 map.addLayer(dayRangeLayer);
 map.addLayer(nightRangeLayer);
 map.addLayer(trueSightRangeLayer);
@@ -386,7 +393,6 @@ map.addLayer(attackRangeLayer);
 map.addLayer(polygonLayer);
 map.addLayer(wardVisionLayer);
 map.addLayer(iconLayer);
-ls.maximizeControl();
 
 OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
     defaultHandlerOptions: {
@@ -411,7 +417,10 @@ OpenLayers.Control.Click = OpenLayers.Class(OpenLayers.Control, {
         output.value = output.value + msg + "\n";
     }
 });
+
 renderer = renderer ? [renderer] : OpenLayers.Layer.Vector.prototype.renderers;
+
+// Controls configuration
 drawControls = {
     line: new OpenLayers.Control.Measure(OpenLayers.Handler.Path, {
         persist: true,
@@ -478,6 +487,8 @@ drawControls = {
         }
     })
 };
+
+// Add controls to map
 for (var key in drawControls) {
     if (key == "line") {
         drawControls[key].events.on({
@@ -493,6 +504,8 @@ for (var key in drawControls) {
     }
     map.addControl(drawControls[key]);
 }
+
+// X/Y coordinate update display handler
 map.events.register("mousemove", map, function (e) {
     var position = this.events.getMousePosition(e),
         lonlat = map.getLonLatFromPixel(e.xy),
@@ -502,6 +515,7 @@ map.events.register("mousemove", map, function (e) {
     OpenLayers.Util.getElement("coords").innerHTML = position;
 });
 
+// Show/hide controls panel
 document.getElementById("controls-max").addEventListener("click", function (e){
     document.getElementById("controls-list").style.display = '';
     document.getElementById("output-panel").style.display = '';
@@ -514,6 +528,8 @@ document.getElementById("controls-min").addEventListener("click", function (e){
     document.getElementById("controls-max").style.display = 'block';
     this.style.display = 'none';
 }, false);
+
+// Show/hide X/Y coordinate display
 document.getElementById("coordControl").addEventListener("change", function (e){
     if (this.checked) {
         document.getElementById("coords").style.display = 'block';
@@ -522,17 +538,21 @@ document.getElementById("coordControl").addEventListener("change", function (e){
         document.getElementById("coords").style.display = 'none';
     }
 }, false);
+
+// Update travel time display when movespeed input changes
 document.getElementById("movespeed").addEventListener("change", function (e){
     document.getElementById("traveltime").innerHTML = (lastDistance / document.getElementById("movespeed").value).toFixed(2);
 }, false);
+
+// Set up panel radio button toggle handlers
 document.getElementById('noneToggle').addEventListener('click', toggleControl, false);
 document.getElementById('lineToggle').addEventListener('click', toggleControl, false);
 document.getElementById('circleToggle').addEventListener('click', toggleControl, false);
 document.getElementById('observerToggle').addEventListener('click', toggleControl, false);
 document.getElementById('sentryToggle').addEventListener('click', toggleControl, false);
 
+// Get map data
 request.open('GET', map_data_path, true);
-
 request.onload = function () {
     if (request.status >= 200 && request.status < 400) {
         var data = JSON.parse(request.responseText);
@@ -542,9 +562,7 @@ request.onload = function () {
         alert('Error loading page.');
     }
 };
-
 request.onerror = function () {
     alert('Error loading page.');
 };
-
 request.send();
