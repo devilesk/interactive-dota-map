@@ -1,3 +1,25 @@
+/*
+  javascript.util is a port of selected parts of java.util to JavaScript which
+  main purpose is to ease porting Java code to JavaScript.
+  
+  The MIT License (MIT)
+  Copyright (C) 2011-2014 by The Authors
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+  The above copyright notice and this permission notice shall be included in
+  all copies or substantial portions of the Software.
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+  THE SOFTWARE.
+*/
 (function(){var e=this;function f(a,b){var c=a.split("."),d=e;c[0]in d||!d.execScript||d.execScript("var "+c[0]);for(var t;c.length&&(t=c.shift());)c.length||void 0===b?d=d[t]?d[t]:d[t]={}:d[t]=b}function g(a,b){function c(){}c.prototype=b.prototype;a.q=b.prototype;a.prototype=new c;a.prototype.constructor=a;a.p=function(a,c,O){var M=Array.prototype.slice.call(arguments,2);return b.prototype[c].apply(a,M)}};function h(a){this.message=a||""}g(h,Error);f("javascript.util.EmptyStackException",h);h.prototype.name="EmptyStackException";function k(a){this.message=a||""}g(k,Error);f("javascript.util.IndexOutOfBoundsException",k);k.prototype.name="IndexOutOfBoundsException";function l(){}f("javascript.util.Iterator",l);l.prototype.hasNext=l.prototype.c;l.prototype.next=l.prototype.next;l.prototype.remove=l.prototype.remove;function m(){}f("javascript.util.Collection",m);function n(){}g(n,m);f("javascript.util.List",n);function p(){}f("javascript.util.Map",p);function q(a){this.message=a||""}g(q,Error);f("javascript.util.NoSuchElementException",q);q.prototype.name="NoSuchElementException";function r(a){this.message=a||""}g(r,Error);r.prototype.name="OperationNotSupported";function s(a){this.a=[];a instanceof m&&this.e(a)}g(s,n);f("javascript.util.ArrayList",s);s.prototype.a=null;s.prototype.add=function(a){this.a.push(a);return!0};s.prototype.add=s.prototype.add;s.prototype.e=function(a){for(a=a.f();a.c();)this.add(a.next());return!0};s.prototype.addAll=s.prototype.e;s.prototype.set=function(a,b){var c=this.a[a];this.a[a]=b;return c};s.prototype.set=s.prototype.set;s.prototype.f=function(){return new u(this)};s.prototype.iterator=s.prototype.f;
 s.prototype.get=function(a){if(0>a||a>=this.size())throw new k;return this.a[a]};s.prototype.get=s.prototype.get;s.prototype.g=function(){return 0===this.a.length};s.prototype.isEmpty=s.prototype.g;s.prototype.size=function(){return this.a.length};s.prototype.size=s.prototype.size;s.prototype.h=function(){for(var a=[],b=0,c=this.a.length;b<c;b++)a.push(this.a[b]);return a};s.prototype.toArray=s.prototype.h;
 s.prototype.remove=function(a){for(var b=!1,c=0,d=this.a.length;c<d;c++)if(this.a[c]===a){this.a.splice(c,1);b=!0;break}return b};s.prototype.remove=s.prototype.remove;function u(a){this.j=a}f("$jscomp.scope.Iterator_",u);u.prototype.j=null;u.prototype.b=0;u.prototype.next=function(){if(this.b===this.j.size())throw new q;return this.j.get(this.b++)};u.prototype.next=u.prototype.next;u.prototype.c=function(){return this.b<this.j.size()?!0:!1};u.prototype.hasNext=u.prototype.c;
